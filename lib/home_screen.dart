@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'add_post_screen.dart'; // یہ نئی پوسٹ والی سکرین کے ساتھ جوڑتا ہے
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'add_post_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -13,6 +15,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedDistrict = 'لکی مروت';
   String selectedCategory = 'تمام کیٹیگریز';
   TextEditingController searchController = TextEditingController();
+
+  List<dynamic> posts = [];
+  bool isLoading = true;
 
   final List<String> provinces = [
     'تمام صوبے',
@@ -35,20 +40,36 @@ class _HomeScreenState extends State<HomeScreen> {
     'ملازمتیں و خدمات'
   ];
 
-  final List> dummyPosts = [
-    {
-      'title': 'سیمسنگ گلیکسی S23 الٹرا',
-      'price': '185,000',
-      'province': 'خیبر پختونخوا (KPK)',
-      'districtOrCity': 'لکی مروت',
-      'description': 'بالکل صاف موبائل ہے، 12 جی بی ریم اور 256 جی بی میموری، ڈبہ اور چارجر ساتھ ہے۔',
-      'images': [
-        'https://via.placeholder.com/600x400',
-      ],
-      'whatsapp': '03001234567',
-      'phone': '03001234567',
+  @override
+  void initState() {
+    super.initState();
+    fetchPosts(); // ایپ کھلتے ہی بیک اینڈ سے پوسٹس لوڈ ہوں گی
+  }
+
+  // بیک اینڈ سے ڈیٹا لانے کا فنکشن (API Fetch)
+  Future<void> fetchPosts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://your-backend-url.com/api/posts'), // اپنے بیک اینڈ کا لنک یہاں درج کریں
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          posts = jsonDecode(response.body);
+          isLoading = false;
+        });
+      } else {
+        throw Exception('پوسٹس لوڈ کرنے میں ناکامی');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('کنکشن کی خرابی: $e')),
+      );
     }
-  ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,25 +159,29 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: dummyPosts.length,
-              itemBuilder: (context, index) {
-                final post = dummyPosts[index];
-                return _buildFacebookPostCard(post);
-              },
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : posts.isEmpty
+                    ? const Center(child: Text('کوئی پوسٹ دستیاب نہیں ہے'))
+                    : ListView.builder(
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return _buildFacebookPostCard(post);
+                        },
+                      ),
           ),
         ],
       ),
-      // نیا پلس بٹن جو پوسٹ ایڈ کرنے والی سکرین پر لے جائے گا
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add, color: Colors.white, size: 30),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddPostScreen()),
           );
+          fetchPosts(); // واپس آنے پر لسٹ ریفریش ہو جائے گی
         },
       ),
     );
@@ -176,10 +201,10 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.blue,
               child: Icon(Icons.store, color: Colors.white),
             ),
-            title: Text(post['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('📍 ${post['districtOrCity']}, ${post['province']}'),
+            title: Text(post['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('📍 ${post['districtOrCity'] ?? ''}, ${post['province'] ?? ''}'),
             trailing: Text(
-              'Rs ${post['price']}',
+              'Rs ${post['price'] ?? 0}',
               style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
@@ -187,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Image.network(images[0], height: 300, width: double.infinity, fit: BoxFit.cover),
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Text(post['description'], style: const TextStyle(fontSize: 14)),
+            child: Text(post['description'] ?? '', style: const TextStyle(fontSize: 14)),
           ),
           const Divider(height: 1),
           Row(
