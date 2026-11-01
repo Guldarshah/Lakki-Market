@@ -11,15 +11,19 @@ class AddPostScreen extends StatefulWidget {
 
 class _AddPostScreenState extends State<AddPostScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _imageController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController imageController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController whatsappController = TextEditingController();
 
   String selectedProvince = 'خیبر پختونخوا (KPK)';
   String selectedDistrict = 'لکی مروت';
   String selectedCategory = 'موبائل و الیکٹرانکس';
+
+  bool isLoading = false;
 
   final List<String> provinces = [
     'خیبر پختونخوا (KPK)',
@@ -40,10 +44,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
     'ملازمتیں و خدمات'
   ];
 
-  bool isLoading = false;
-
   // پوسٹ کو سرور پر بھیجنے کا فنکشن
-  Future<void> _submitPost() async {
+  Future<void> submitPost() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -51,30 +53,29 @@ class _AddPostScreenState extends State<AddPostScreen> {
     });
 
     try {
-      // نوٹ: لوکل ہوسٹ کے لیے آپ اپنے سرور کا لنک یا IP استعمال کریں گے
       final response = await http.post(
-        Uri.parse('https://your-backend-url.com/api/posts'), 
+        Uri.parse('https://your-backend-url.com/api/posts'), // اپنے بیک اینڈ کا لنک یہاں درج کریں
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'title': _titleController.text,
-          'price': double.parse(_priceController.text),
+          'title': titleController.text,
+          'price': double.parse(priceController.text),
           'province': selectedProvince,
           'districtOrCity': selectedDistrict,
           'category': selectedCategory,
-          'description': _descriptionController.text,
-          'images': [_imageController.text], // فی الحال تصویر کا لنک
-          'whatsapp': _phoneController.text,
-          'phone': _phoneController.text,
+          'description': descriptionController.text,
+          'images': [imageController.text],
+          'phone': phoneController.text,
+          'whatsapp': whatsappController.text,
         }),
       );
 
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('پوسٹ کامیابی کے ساتھ شائع ہو گئی ہے!')),
+          const SnackBar(content: Text('پوسٹ کامیابی سے شائع ہو گئی!')),
         );
-        Navigator.pop(context);
+        Navigator.pop(context); // واپس ہوم اسکرین پر جائیں
       } else {
-        throw Exception('پوسٹ اپ لوڈ کرنے میں ناکامی');
+        throw Exception('پوسٹ محفوظ کرنے میں خرابی');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,9 +92,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('نئی پوسٹ یا اشتہار لگائیں'),
+        title: const Text('نئی پوسٹ شامل کریں'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        elevation: 1,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -102,69 +104,71 @@ class _AddPostScreenState extends State<AddPostScreen> {
           child: ListView(
             children: [
               TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'پروڈکٹ کا نام (عنوان)'),
-                validator: (val) => val!.isEmpty ? 'براہ کرم نام درج کریں' : null,
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'اشتہار کا عنوان (Title)'),
+                validator: (value) => value!.isEmpty ? 'عنوان درج کریں' : null,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: _priceController,
+                controller: priceController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'قیمت (روپے میں)'),
-                validator: (val) => val!.isEmpty ? 'براہ کرم قیمت درج کریں' : null,
+                validator: (value) => value!.isEmpty ? 'قیمت درج کریں' : null,
               ),
-              const SizedBox(height: 15),
-              // صوبہ سلیکٹر
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedProvince,
-                decoration: const InputDecoration(labelText: 'صوبہ'),
-                items: provinces.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList,
+                items: provinces.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
                 onChanged: (val) => setState(() => selectedProvince = val!),
+                decoration: const InputDecoration(labelText: 'صوبہ'),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: TextEditingController(text: selectedDistrict),
-                decoration: const InputDecoration(labelText: 'ضلع یا شہر (مثلاً لکی مروت)'),
                 onChanged: (val) => selectedDistrict = val,
+                decoration: const InputDecoration(labelText: 'ضلع / شہر (مثلاً لکی مروت)'),
               ),
-              const SizedBox(height: 15),
-              // کیٹیگری سلیکٹر
+              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedCategory,
-                decoration: const InputDecoration(labelText: 'کیٹیگری'),
-                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList,
+                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                 onChanged: (val) => setState(() => selectedCategory = val!),
+                decoration: const InputDecoration(labelText: 'کیٹیگری'),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: _imageController,
+                controller: imageController,
                 decoration: const InputDecoration(labelText: 'تصویر کا لنک (Image URL)'),
-                validator: (val) => val!.isEmpty ? 'تصویر کا لنک لازمی ہے' : null,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: _phoneController,
+                controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'فون نمبر یا واٹس ایپ نمبر'),
-                validator: (val) => val!.isEmpty ? 'نمبر درج کریں' : null,
+                decoration: const InputDecoration(labelText: 'فون نمبر (مثلاً 03001234567)'),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextFormField(
-                controller: _descriptionController,
+                controller: whatsappController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'واٹس ایپ نمبر'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descriptionController,
                 maxLines: 4,
                 decoration: const InputDecoration(labelText: 'تفصیل (Description)'),
-                validator: (val) => val!.isEmpty ? 'تفصیل لکھیں' : null,
+                validator: (value) => value!.isEmpty ? 'تفصیل درج کریں' : null,
               ),
-              const SizedBox(height: 25),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  onPressed: isLoading ? null : submitPost,
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('اشتہار شائع کریں', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-                onPressed: isLoading ? null : _submitPost,
-                child: isLoading
-                    const CircularProgressIndicator(color: Colors.white)
-                    : const Text('پوسٹ پبلش کریں', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ],
           ),
