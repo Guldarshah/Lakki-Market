@@ -7,10 +7,15 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// ہوم پیج روٹ تاکہ Cannot GET / کا ایرر نہ آئے
+app.get('/', (req, res) => {
+  res.send('Lakki Market Backend is Running Successfully!');
+});
+
 // 1. تمام پوسٹس کو سرور سے حاصل کرنے کا API (GET)
 app.get('/api/posts', async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 }); // نئی پوسٹ سب سے اوپر آئے گی
+    const posts = await Post.find().sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -24,12 +29,8 @@ app.post('/api/posts', async (req, res) => {
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// سرور کا پورٹ
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+module.exports = app;
