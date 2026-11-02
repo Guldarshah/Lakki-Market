@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -45,7 +44,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
     'ملازمتیں و خدمات'
   ];
 
-  // پوسٹ کو سرور پر بھیجنے کا فنکشن
   Future<void> submitPost() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -55,7 +53,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://lakki-market-rlv8.vercel.app/api/posts'),
+        Uri.parse('https://lakki-market.vercel.app/api/posts'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'title': titleController.text,
@@ -219,4 +217,3 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 }
-```
