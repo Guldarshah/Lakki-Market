@@ -1,3 +1,4 @@
+```dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -54,37 +55,45 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://your-backend-url.com/api/posts'), // اپنے بیک اینڈ کا لنک یہاں درج کریں
+        Uri.parse('https://lakki-market-rlv8.vercel.app/api/posts'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'title': titleController.text,
-          'price': double.parse(priceController.text),
-          'province': selectedProvince,
-          'districtOrCity': selectedDistrict,
-          'category': selectedCategory,
+          'price': priceController.text,
           'description': descriptionController.text,
-          'images': [imageController.text],
+          'imageUrl': imageController.text,
           'phone': phoneController.text,
           'whatsapp': whatsappController.text,
+          'province': selectedProvince,
+          'district': selectedDistrict,
+          'category': selectedCategory,
         }),
       );
 
-      if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('پوسٹ کامیابی سے شائع ہو گئی!')),
-        );
-        Navigator.pop(context); // واپس ہوم اسکرین پر جائیں
-      } else {
-        throw Exception('پوسٹ محفوظ کرنے میں خرابی');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خرابی: $e')),
-      );
-    } finally {
       setState(() {
         isLoading = false;
       });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('پوسٹ کامیابی سے شائع ہو گئی!')),
+        );
+        Navigator.pop(context);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خرابی: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('سرور سے رابطہ نہ ہو سکا: $e')),
+      );
     }
   }
 
@@ -93,82 +102,115 @@ class _AddPostScreenState extends State<AddPostScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('نئی پوسٹ شامل کریں'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
+        backgroundColor: Colors.teal,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: 'اشتہار کا عنوان (Title)'),
-                validator: (value) => value!.isEmpty ? 'عنوان درج کریں' : null,
+                decoration: const InputDecoration(
+                  labelText: 'عنوان (Title)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'عنوان درج کریں' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: priceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'قیمت (روپے میں)'),
-                validator: (value) => value!.isEmpty ? 'قیمت درج کریں' : null,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: selectedProvince,
-                items: provinces.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
-                onChanged: (val) => setState(() => selectedProvince = val!),
-                decoration: const InputDecoration(labelText: 'صوبہ'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: TextEditingController(text: selectedDistrict),
-                onChanged: (val) => selectedDistrict = val,
-                decoration: const InputDecoration(labelText: 'ضلع / شہر (مثلاً لکی مروت)'),
+                decoration: const InputDecoration(
+                  labelText: 'قیمت (Price)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'قیمت درج کریں' : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedCategory,
-                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => selectedCategory = val!),
-                decoration: const InputDecoration(labelText: 'کیٹیگری'),
+                decoration: const InputDecoration(
+                  labelText: 'کیٹیگری',
+                  border: OutlineInputBorder(),
+                ),
+                items: categories.map((String cat) {
+                  return DropdownMenuItem(value: cat, child: Text(cat));
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => selectedCategory = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedProvince,
+                decoration: const InputDecoration(
+                  labelText: 'صوبہ',
+                  border: OutlineInputBorder(),
+                ),
+                items: provinces.map((String prov) {
+                  return DropdownMenuItem(value: prov, child: Text(prov));
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => selectedProvince = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'تفصیل (Description)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'تفصیل درج کریں' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: imageController,
-                decoration: const InputDecoration(labelText: 'تصویر کا لنک (Image URL)'),
+                decoration: const InputDecoration(
+                  labelText: 'تصویر کا یو آر ایل (Image URL)',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'فون نمبر (مثلاً 03001234567)'),
+                decoration: const InputDecoration(
+                  labelText: 'فون نمبر',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'نمبر درج کریں' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: whatsappController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'واٹس ایپ نمبر'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: descriptionController,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'تفصیل (Description)'),
-                validator: (value) => value!.isEmpty ? 'تفصیل درج کریں' : null,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                  onPressed: isLoading ? null : submitPost,
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('اشتہار شائع کریں', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                decoration: const InputDecoration(
+                  labelText: 'واٹس ایپ نمبر',
+                  border: OutlineInputBorder(),
                 ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: isLoading ? null : submitPost,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'شائع کریں',
+                        style: TextStyle(fontSize: 18),
+                      ),
               ),
             ],
           ),
@@ -177,3 +219,4 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 }
+```
