@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -29,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://lakki-market-rlv8.vercel.app/api/posts'),
+        Uri.parse('https://lakki-market.vercel.app/api/posts'),
       );
 
       if (response.statusCode == 200) {
@@ -141,4 +140,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-```
