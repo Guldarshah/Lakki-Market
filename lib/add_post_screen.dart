@@ -52,7 +52,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
     });
 
     try {
-      final response = await http.post(
+      import 'package:http/http.dart' as http
         Uri.parse('https://lakki-market.vercel.app/api/posts'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
